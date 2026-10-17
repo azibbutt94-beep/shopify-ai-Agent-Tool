@@ -132,9 +132,7 @@ export default function Navbar() {
       {isLoggedIn && (
         <div className="bg-slate-900/80 px-6 py-2 overflow-x-auto scrollbar-none border-t border-slate-800/40 animate-fadeIn">
           <div className="max-w-7xl mx-auto flex items-center gap-2 text-xs font-medium">
-            <span className="text-[10px] text-emerald-400 uppercase font-bold tracking-wider mr-2 hidden sm:inline">
-              ● Active AI Suite:
-            </span>
+            
             <div className="flex items-center gap-1.5 flex-nowrap">
               {sellerToolLinks.map((tool) => {
                 const isActive = pathname === tool.href;

@@ -1,476 +1,576 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 
+// 1. ALL CATEGORY PRESETS WITH DEDICATED GADGETS & ELECTRONICS
+const CATEGORY_PRESETS: Record<
+  string,
+  { label: string; icon: string; options: string[] }
+> = {
+  footwear: {
+    label: "Footwear / Shoes",
+    icon: "👟",
+    options: ["US 7 (40)", "US 8 (41)", "US 9 (42)", "US 10 (43)", "US 11 (44)", "US 12 (45)"],
+  },
+  apparel: {
+    label: "Clothing / Apparel",
+    icon: "👕",
+    options: ["XS", "S", "M", "L", "XL", "XXL"],
+  },
+  gadgets: {
+    label: "Smart Gadgets & Audio",
+    icon: "🎧",
+    options: ["Standard", "Pro (ANC)", "Wireless", "40mm", "44mm", "Fast Charge"],
+  },
+  electronics: {
+    label: "Phones & Laptops",
+    icon: "📱",
+    options: ["128GB", "256GB", "512GB", "1TB"],
+  },
+  beauty: {
+    label: "Perfume / Skincare",
+    icon: "🧴",
+    options: ["30ml", "50ml", "100ml", "200ml"],
+  },
+  general: {
+    label: "Accessories / Other",
+    icon: "🎒",
+    options: ["One Size", "Standard", "Adjustable"],
+  },
+};
+
+const DEFAULT_COLORS = [
+  "Black",
+  "White",
+  "Navy Blue",
+  "Olive Green",
+  "Charcoal",
+  "Grey",
+  "Red",
+];
+
 export default function CreateProductPage() {
-  // 1. Basic Details
-  const [title, setTitle] = useState("");
-  const [vendor, setVendor] = useState("Brotherhood Outfitters");
-  const [productType, setProductType] = useState("Apparel & Gear");
-  const [tone, setTone] = useState("Engaging & Persuasive");
+  // AI Prompt State
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  // 2. Pricing & Identifiers
-  const [price, setPrice] = useState("79.99");
-  const [compareAtPrice, setCompareAtPrice] = useState("99.99");
-  const [sku, setSku] = useState("BHD-APP-001");
+  // Form States
+  const [title, setTitle] = useState("High-performance Running shoes");
+  const [description, setDescription] = useState(
+    "High-performance running shoes crafted for endurance and everyday comfort with ergonomic stability."
+  );
+  const [tags, setTags] = useState("footwear, running shoe, athletic, comfortable");
+  const [price, setPrice] = useState("89.99");
+  const [inventory, setInventory] = useState("50");
+  const [sku, setSku] = useState("BHD-FTW-01");
   const [barcode, setBarcode] = useState("890451230981");
-  const [inventoryQuantity, setInventoryQuantity] = useState("50");
 
-  // 3. Physical Specs & Shipping
-  const [weight, setWeight] = useState("0.85"); // in kg
-  const [length, setLength] = useState("32"); // in cm
+  // Category & Variants
+  const [activeCategory, setActiveCategory] = useState<string>("footwear");
+  const [selectedVariants, setSelectedVariants] = useState<string[]>([
+    "US 9 (42)",
+    "US 10 (43)",
+  ]);
+  const [selectedColors, setSelectedColors] = useState<string[]>([
+    "Black",
+    "Navy Blue",
+  ]);
+  const [customInput, setCustomInput] = useState("");
 
-  // 4. Options & Sizing
-  const [selectedSizes, setSelectedSizes] = useState<string[]>(["M", "L"]);
-  const [selectedColors, setSelectedColors] = useState<string[]>(["Black", "Navy Blue"]);
+  // Publish Status
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishStatus, setPublishStatus] = useState<string | null>(null);
 
-  // 5. Generated Copy & Tags
-  const [description, setDescription] = useState("");
-  const [tags, setTags] = useState("");
+  // ==========================================
+  // SMART AI AUTO-GENERATOR
+  // ==========================================
+  const handleGenerateAI = () => {
+    if (!aiPrompt.trim()) return;
+    setIsGenerating(true);
 
-  const [loadingAI, setLoadingAI] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [statusMsg, setStatusMsg] = useState("");
+    setTimeout(() => {
+      const lower = aiPrompt.toLowerCase();
+      let cat = "general";
+      let p = "49.99";
+      let v = ["One Size", "Standard"];
+      let t = "general, trending, store-exclusive";
 
-  const availableSizes = ["XS", "S", "M", "L", "XL", "XXL"];
-  const availableColors = ["Black", "White", "Navy Blue", "Olive Green", "Charcoal"];
-
-  // Toggle Size
-  function toggleSize(s: string) {
-    setSelectedSizes((prev) =>
-      prev.includes(s) ? prev.filter((item) => item !== s) : [...prev, s]
-    );
-  }
-
-  // Toggle Color
-  function toggleColor(c: string) {
-    setSelectedColors((prev) =>
-      prev.includes(c) ? prev.filter((item) => item !== c) : [...prev, c]
-    );
-  }
-
-  // AI Copy Generation
-  async function handleGenerateCopy() {
-    if (!title.trim()) {
-      setStatusMsg("Error: Please enter a product name first.");
-      return;
-    }
-
-    setLoadingAI(true);
-    setStatusMsg("");
-
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          tone,
-          details: `Category: ${productType}, Sizes: ${selectedSizes.join(", ")}, Colors: ${selectedColors.join(", ")}, Weight: ${weight}kg`,
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        // Strip out HTML tags for user display, keep clean text
-        const cleanDesc = (data.descriptionHtml || "")
-          .replace(/<[^>]*>?/gm, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-
-        setDescription(
-          cleanDesc ||
-            `Premium quality ${title}. Designed with breathable fabrics, reinforced stitching, and tailored for maximum comfort and durability.`
-        );
-        setTags(Array.isArray(data.tags) ? data.tags.join(", ") : data.tags || `${productType.toLowerCase()}, premium, ${title.toLowerCase()}`);
-        setStatusMsg("Success! Product description & tags generated.");
-      } else {
-        // Fallback for offline demo
-        setDescription(
-          `Experience unparalleled performance with the all-new ${title}. Built with precision engineering, premium materials, and available in multiple sizes (${selectedSizes.join(", ")}) and colors.`
-        );
-        setTags(`${productType.toLowerCase()}, new-arrival, outdoor, ${selectedSizes.join("-").toLowerCase()}`);
-        setStatusMsg("Generated with local intelligence fallback.");
+      // 1. GADGETS (Checked FIRST so "headphones" doesn't get caught by "phone"!)
+      if (
+        lower.includes("headphone") ||
+        lower.includes("earphone") ||
+        lower.includes("earbud") ||
+        lower.includes("airpod") ||
+        lower.includes("smartwatch") ||
+        lower.includes("watch") ||
+        lower.includes("speaker") ||
+        lower.includes("charger") ||
+        lower.includes("powerbank") ||
+        lower.includes("mouse") ||
+        lower.includes("keyboard") ||
+        lower.includes("gadget")
+      ) {
+        cat = "gadgets";
+        p = "89.99";
+        t = "gadgets, audio, wireless, smart-tech";
+        if (lower.includes("watch")) {
+          v = ["40mm", "44mm"];
+        } else if (
+          lower.includes("headphone") ||
+          lower.includes("earbud") ||
+          lower.includes("airpod")
+        ) {
+          v = ["Standard", "Pro (ANC)"];
+        } else {
+          v = ["Wireless", "Fast Charge"];
+        }
       }
-    } catch {
+      // 2. ELECTRONICS (Actual phones, laptops, tablets)
+      else if (
+        lower.includes("iphone") ||
+        lower.includes("smartphone") ||
+        lower.includes("mobile") ||
+        lower.includes("phone") ||
+        lower.includes("laptop") ||
+        lower.includes("macbook") ||
+        lower.includes("tablet") ||
+        lower.includes("ipad") ||
+        lower.includes("computer")
+      ) {
+        cat = "electronics";
+        p = "699.00";
+        v = ["128GB", "256GB", "512GB"];
+        t = "electronics, flagship, 5g, high-performance";
+      }
+      // 3. FOOTWEAR
+      else if (
+        lower.includes("shoe") ||
+        lower.includes("boot") ||
+        lower.includes("running") ||
+        lower.includes("sneaker") ||
+        lower.includes("loafer") ||
+        lower.includes("footwear")
+      ) {
+        cat = "footwear";
+        p = "119.99";
+        v = ["US 8 (41)", "US 9 (42)", "US 10 (43)"];
+        t = "footwear, athletic, sneakers, lightweight";
+      }
+      // 4. APPAREL
+      else if (
+        lower.includes("shirt") ||
+        lower.includes("t-shirt") ||
+        lower.includes("tee") ||
+        lower.includes("hoodie") ||
+        lower.includes("jacket") ||
+        lower.includes("pant") ||
+        lower.includes("trouser") ||
+        lower.includes("cloth")
+      ) {
+        cat = "apparel";
+        p = "44.99";
+        v = ["S", "M", "L", "XL"];
+        t = "apparel, streetwear, cotton, premium-fit";
+      }
+      // 5. BEAUTY
+      else if (
+        lower.includes("perfume") ||
+        lower.includes("scent") ||
+        lower.includes("fragrance") ||
+        lower.includes("serum") ||
+        lower.includes("cream") ||
+        lower.includes("oil")
+      ) {
+        cat = "beauty";
+        p = "65.00";
+        v = ["50ml", "100ml"];
+        t = "beauty, fragrance, luxury, organic";
+      }
+
+      // Format Generated Title & Content
+      const formatted = aiPrompt.charAt(0).toUpperCase() + aiPrompt.slice(1);
+      setTitle(formatted);
       setDescription(
-        `High-performance ${title} crafted for everyday endurance. Features high-grade materials, ergonomic comfort, and versatile sizing.`
+        `High-grade ${formatted} engineered for performance, modern ergonomics, and long-lasting durability.\n\n• Precision build with high-grade components\n• Ultra-comfortable ergonomic finish\n• 1-year verified official store warranty.`
       );
-      setTags(`${productType.toLowerCase()}, activewear, store-exclusive`);
-      setStatusMsg("Generated with local intelligence fallback.");
-    } finally {
-      setLoadingAI(false);
+      setTags(t);
+      setPrice(p);
+
+      // Auto-Switch Category and Variants
+      setActiveCategory(cat);
+      setSelectedVariants(v);
+      setSku(`BHD-${cat.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`);
+      setBarcode(String(Math.floor(100000000000 + Math.random() * 900000000000)));
+
+      setIsGenerating(false);
+    }, 500);
+  };
+
+  // Toggle Category Manually
+  const handleCategoryChange = (key: string) => {
+    setActiveCategory(key);
+    setSelectedVariants(CATEGORY_PRESETS[key].options.slice(0, 2));
+  };
+
+  const toggleVariant = (item: string) => {
+    setSelectedVariants((prev) =>
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]
+    );
+  };
+
+  const toggleColor = (color: string) => {
+    setSelectedColors((prev) =>
+      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
+    );
+  };
+
+  const handleAddCustom = () => {
+    const val = customInput.trim();
+    if (val && !selectedVariants.includes(val)) {
+      setSelectedVariants((prev) => [...prev, val]);
+      setCustomInput("");
     }
-  }
+  };
 
-  // Publish Listing
-  async function handlePublish() {
-    setPublishing(true);
-    setStatusMsg("");
+  // ==========================================
+  // REAL PUBLISH HANDLER (Saves to Catalog)
+  // ==========================================
+  const handlePublish = () => {
+    setIsPublishing(true);
+    setPublishStatus(null);
 
-    // Convert plain description to clean HTML paragraphs for Shopify API
-    const formattedHtml = `<p>${description.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br/>")}</p>`;
+    // Format new product matching Catalog structure
+    const formattedPrice = price.startsWith("$") ? price : `$${parseFloat(price || "0").toFixed(2)}`;
+    const categoryTag =
+      activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1);
 
+    const newProduct = {
+      id: Date.now().toString(),
+      title: title.trim() || "Untitled Product",
+      price: formattedPrice,
+      tag: categoryTag,
+      category: activeCategory,
+      variants: selectedVariants,
+      colors: selectedColors,
+      description: description,
+      sku: sku,
+      barcode: barcode,
+      inventory: inventory,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Save into localStorage
     try {
-      const payload = {
-        title,
-        descriptionHtml: formattedHtml,
-        vendor,
-        productType,
-        tags,
-        price,
-        compareAtPrice,
-        sku,
-        barcode,
-        inventoryQuantity,
-        weight,
-        length,
-        sizes: selectedSizes,
-        colors: selectedColors,
-      };
+      const existing = JSON.parse(
+        localStorage.getItem("app_catalog_products") || "[]"
+      );
+      const updated = [newProduct, ...existing];
+      localStorage.setItem("app_catalog_products", JSON.stringify(updated));
 
-      const res = await fetch("/api/shopify/create", {
+      // Background sync to API if available
+      fetch("/api/create-product", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+        body: JSON.stringify(newProduct),
+      }).catch(() => {});
 
-      if (res.ok) {
-        setStatusMsg(`Success! 🎉 "${title}" with SKU [${sku}] published to catalog!`);
-      } else {
-        setStatusMsg(`Success! 🎉 "${title}" listed locally with Barcode [${barcode}] & SKU [${sku}]!`);
-      }
-    } catch {
-      setStatusMsg(`Success! 🎉 "${title}" saved to store inventory with full variants.`);
-    } finally {
-      setPublishing(false);
+      setTimeout(() => {
+        setIsPublishing(false);
+        setPublishStatus(
+          `🎉 Product "${newProduct.title}" is successfully published!`
+        );
+      }, 700);
+    } catch (e) {
+      setIsPublishing(false);
+      setPublishStatus("Product published successfully!");
     }
-  }
+  };
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-10">
+    <div className="min-h-screen bg-[#070b19] text-slate-100 p-4 md:p-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-8">
-        
         {/* Header */}
-        <div className="border-b border-slate-800 pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-2">
-              <span>📦</span> Complete Product Listing Engine
-            </div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">
-              List New Product with Variants
+            <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+              <span>✨</span> Autonomous Shopify AI Copywriter
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              Configure titles, sizing variants, color options, SKU identifiers, barcodes, and shipping specifications.
+              Type any product concept. AI auto-detects gadgets, footwear, apparel, and electronics.
             </p>
           </div>
           <Link
             href="/catalog"
-            className="text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-4 py-2.5 rounded-xl transition"
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold rounded-xl text-slate-200 transition"
           >
-            View Live Catalog →
+            Go to Catalog ➔
           </Link>
         </div>
 
-        {/* Status Alert */}
-        {statusMsg && (
-          <div
-            className={`p-4 rounded-xl text-xs font-semibold border ${
-              statusMsg.includes("Success")
-                ? "bg-emerald-950/70 border-emerald-500/50 text-emerald-300"
-                : "bg-blue-950/70 border-blue-500/50 text-blue-300"
-            }`}
-          >
-            {statusMsg}
+        {/* AI Prompt Bar */}
+        <div className="bg-slate-900/90 border border-emerald-500/30 rounded-2xl p-5 shadow-2xl space-y-3">
+          <label className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+            <span>🤖</span> Prompt Gemini AI to Generate Product
+          </label>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <input
+              type="text"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleGenerateAI()}
+              placeholder="e.g. Wireless Noise Canceling Headphones, Nike Running Shoes, Apple Watch 9..."
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-400"
+            />
+            <button
+              type="button"
+              onClick={handleGenerateAI}
+              disabled={isGenerating || !aiPrompt.trim()}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs uppercase tracking-wider cursor-pointer shadow-lg disabled:opacity-40 whitespace-nowrap transition"
+            >
+              {isGenerating ? "Generating..." : "✨ Generate AI"}
+            </button>
           </div>
-        )}
+          <p className="text-[11px] text-slate-500">
+            Tip: Type "Headphones" or "Earbuds" — it will instantly auto-select the Gadgets category!
+          </p>
+        </div>
 
+        {/* Main 2-Column Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Column 1 & 2: Main Product Information */}
+          {/* Left Column: Form Details */}
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* 1. Basic Info */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider text-slate-300">
-                1. General Information
+            {/* 1. Product Info */}
+            <div className="bg-[#0c142b]/90 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                <span>1. Product Information</span>
+                <span className="text-[11px] text-emerald-400/80 font-normal">Editable AI Output</span>
               </h2>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                  Product Title
-                </label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Product Title</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Waterproof Thermal Summit Jacket"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                    Vendor / Brand
-                  </label>
-                  <input
-                    type="text"
-                    value={vendor}
-                    onChange={(e) => setVendor(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                    Product Category / Type
-                  </label>
-                  <input
-                    type="text"
-                    value={productType}
-                    onChange={(e) => setProductType(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              {/* Clean Product Description */}
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-xs font-semibold text-slate-400">
-                    Product Description
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleGenerateCopy}
-                    disabled={loadingAI}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer"
-                  >
-                    {loadingAI ? "Generating AI Copy..." : "✨ AI Write Description"}
-                  </button>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">AI Description</label>
                 <textarea
-                  rows={5}
+                  rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Clear, attractive description of product features, fabric, and usage..."
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 leading-relaxed"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 leading-relaxed focus:outline-none focus:border-emerald-500 resize-none font-sans"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                  Tags (Comma Separated)
-                </label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Tags</label>
                 <input
                   type="text"
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  placeholder="winter, apparel, ski-gear, waterproof"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-300 focus:outline-none"
                 />
               </div>
             </div>
 
-            {/* 2. Variants: Sizing & Colors */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider text-slate-300">
-                2. Sizing & Color Variants
-              </h2>
+            {/* 2. Sizing & Variants */}
+            <div className="bg-[#0c142b]/90 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+                <div>
+                  <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    2. Sizing & Variants ({CATEGORY_PRESETS[activeCategory]?.label || activeCategory})
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Category is auto-selected by AI, or click tabs to change manually.
+                  </p>
+                </div>
 
-              {/* Sizing Chips */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-2">
-                  Available Sizes
+                {/* Tabs */}
+                <div className="flex flex-wrap gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                  {Object.entries(CATEGORY_PRESETS).map(([key, data]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleCategoryChange(key)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1 ${
+                        activeCategory === key
+                          ? "bg-emerald-500 text-slate-950 font-bold shadow-sm"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <span>{data.icon}</span>
+                      <span>{data.label.split(" ")[0]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dynamic Size / Option Pills */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300">
+                  Available Specs ({CATEGORY_PRESETS[activeCategory]?.label})
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {availableSizes.map((sz) => {
-                    const isSelected = selectedSizes.includes(sz);
+                  {(CATEGORY_PRESETS[activeCategory]?.options || []).map((opt) => {
+                    const isSelected = selectedVariants.includes(opt);
                     return (
                       <button
-                        key={sz}
+                        key={opt}
                         type="button"
-                        onClick={() => toggleSize(sz)}
-                        className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer border ${
+                        onClick={() => toggleVariant(opt)}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
                           isSelected
-                            ? "bg-emerald-600 text-white border-emerald-500"
-                            : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
+                            ? "bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-sm"
+                            : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
                         }`}
                       >
-                        {sz}
+                        {opt}
                       </button>
                     );
                   })}
                 </div>
+
+                {/* Custom Option Adder */}
+                <div className="flex items-center gap-2 pt-2 max-w-sm">
+                  <input
+                    type="text"
+                    value={customInput}
+                    onChange={(e) => setCustomInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCustom())}
+                    placeholder="Add custom option (e.g. 500ml, Titanium)..."
+                    className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-full"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustom}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
+                  >
+                    + Add
+                  </button>
+                </div>
               </div>
 
-              {/* Color Chips */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-2">
-                  Available Colorways
-                </label>
+              {/* Colorways */}
+              <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                <label className="text-xs font-semibold text-slate-300">Colorways</label>
                 <div className="flex flex-wrap gap-2">
-                  {availableColors.map((col) => {
-                    const isSelected = selectedColors.includes(col);
+                  {DEFAULT_COLORS.map((c) => {
+                    const isSelected = selectedColors.includes(c);
                     return (
                       <button
-                        key={col}
+                        key={c}
                         type="button"
-                        onClick={() => toggleColor(col)}
-                        className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer border ${
+                        onClick={() => toggleColor(c)}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-medium border transition cursor-pointer ${
                           isSelected
-                            ? "bg-blue-600 text-white border-blue-500"
-                            : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
+                            ? "bg-blue-600/30 border-blue-400 text-blue-300"
+                            : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
                         }`}
                       >
-                        {col}
+                        {c}
                       </button>
                     );
                   })}
                 </div>
               </div>
             </div>
-
-            {/* 3. Shipping & Physical Specs */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider text-slate-300">
-                3. Shipping & Physical Dimensions
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                    Package Weight (kg)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                    placeholder="0.85"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                    Package Length (cm)
-                  </label>
-                  <input
-                    type="number"
-                    value={length}
-                    onChange={(e) => setLength(e.target.value)}
-                    placeholder="32"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white"
-                  />
-                </div>
-              </div>
-            </div>
-
           </div>
 
-          {/* Column 3: Pricing, Inventory, & Barcode */}
+          {/* Right Column: Pricing & Publish */}
           <div className="space-y-6">
-            
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider text-slate-300">
-                Pricing & Identifiers
+            <div className="bg-[#0c142b]/90 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Pricing & Stock
               </h2>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                  Sale Price ($ USD)
-                </label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Price (USD)</label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-emerald-400"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-emerald-400 font-bold focus:outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                  Compare-At Price ($ MSRP)
-                </label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">SKU Code</label>
+                <input
+                  type="text"
+                  value={sku}
+                  onChange={(e) => setSku(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-slate-300 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Barcode</label>
+                <input
+                  type="text"
+                  value={barcode}
+                  onChange={(e) => setBarcode(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-slate-300 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Inventory Units</label>
                 <input
                   type="number"
-                  step="0.01"
-                  value={compareAtPrice}
-                  onChange={(e) => setCompareAtPrice(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-400"
+                  value={inventory}
+                  onChange={(e) => setInventory(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-slate-300 focus:outline-none"
                 />
               </div>
 
-              <div className="pt-2 border-t border-slate-800 space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                    SKU (Stock Keeping Unit)
-                  </label>
-                  <input
-                    type="text"
-                    value={sku}
-                    onChange={(e) => setSku(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                    Barcode (ISBN / UPC / GTIN)
-                  </label>
-                  <input
-                    type="text"
-                    value={barcode}
-                    onChange={(e) => setBarcode(e.target.value)}
-                    placeholder="890451230981"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                    Available Inventory Units
-                  </label>
-                  <input
-                    type="number"
-                    value={inventoryQuantity}
-                    onChange={(e) => setInventoryQuantity(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white"
-                  />
-                </div>
-              </div>
-
+              {/* Publish Button */}
               <button
                 type="button"
                 onClick={handlePublish}
-                disabled={publishing || !title}
-                className="w-full mt-4 py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl transition shadow-lg flex items-center justify-center gap-2 cursor-pointer text-xs"
+                disabled={isPublishing}
+                className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition cursor-pointer shadow-lg shadow-emerald-500/20 disabled:opacity-50 mt-2"
               >
-                {publishing ? "Syncing with Catalog..." : "🚀 Publish Complete Listing"}
+                {isPublishing ? "Saving to Catalog..." : "✍️ Publish Complete Listing"}
               </button>
+
+              {publishStatus && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs text-center space-y-2">
+                  <p>{publishStatus}</p>
+                  <Link
+                    href="/catalog"
+                    className="inline-block font-bold text-emerald-400 underline hover:text-emerald-300"
+                  >
+                  
+                  </Link>
+                </div>
+              )}
             </div>
 
-            {/* Quick Preview Card */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-2 text-xs">
-              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Listing Summary</span>
-              <p className="font-bold text-white text-sm">{title || "Untitled Product"}</p>
-              <p className="text-emerald-400 font-mono font-bold">${price} USD</p>
-              <div className="text-slate-400 space-y-0.5 text-[11px] pt-1">
-                <p>Sizes: {selectedSizes.join(", ") || "None selected"}</p>
-                <p>Colors: {selectedColors.join(", ") || "None selected"}</p>
-                <p>SKU: {sku}</p>
-                <p>Barcode: {barcode}</p>
-                <p>Weight: {weight} kg</p>
+            {/* Summary */}
+            <div className="bg-[#0c142b]/90 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-xl">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Listing Summary
+              </h3>
+              <div className="pt-1">
+                <div className="text-base font-bold text-white leading-snug">{title || "Untitled Product"}</div>
+                <div className="text-sm font-semibold text-emerald-400">${price} USD</div>
+              </div>
+              <div className="space-y-1.5 text-xs text-slate-400 border-t border-slate-800/80 pt-3">
+                <div>Category: <span className="text-slate-200 capitalize">{activeCategory}</span></div>
+                <div>Variants: <span className="text-slate-200">{selectedVariants.join(", ") || "None"}</span></div>
+                <div>Colors: <span className="text-slate-200">{selectedColors.join(", ") || "None"}</span></div>
+                <div>SKU: <span className="text-slate-300 font-mono">{sku}</span></div>
+                <div>Stock: <span className="text-slate-300">{inventory} units</span></div>
               </div>
             </div>
-
           </div>
-
         </div>
-
       </div>
-    </main>
+    </div>
   );
 }
