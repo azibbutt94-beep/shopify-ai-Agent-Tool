@@ -12,9 +12,25 @@ interface Product {
   checkoutUrl: string;
 }
 
-export default function ChatPage() {
-  const STORE_DOMAIN = "brotherhood-f5g25mtk.myshopify.com";
+ export default function ChatPage() {
+  // Store Domain Constants (Har jagah accessible)
+  const STORE_DOMAIN =
+    process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN ||
+    "brotherhood-f5g25mtk.myshopify.com";
+  const store_Domain = STORE_DOMAIN;
 
+  // Shopify Checkout URL Helper
+  const getCheckoutUrl = (variantId?: string | number) => {
+    if (!variantId) {
+      return `https://${STORE_DOMAIN}/cart`;
+    }
+
+    // ID se sirf numbers nikalna
+    const cleanId = String(variantId).replace(/\D/g, "");
+    return `https://${STORE_DOMAIN}/cart/${cleanId}:1`;
+  };
+
+  // Store Catalog
   // Store Catalog
   const storeCatalog: Product[] = [
     {
@@ -24,7 +40,7 @@ export default function ChatPage() {
       tag: "Footwear",
       stock: "In Stock (42 units)",
       desc: "Ultra-breathable cushioning engineered for marathons and daily training.",
-      checkoutUrl: `https://${STORE_DOMAIN}/cart`,
+      checkoutUrl: `https://${store_Domain}/cart`,
     },
     {
       id: "prod-2",
@@ -268,30 +284,39 @@ export default function ChatPage() {
                     </div>
                     <span className="text-emerald-400 font-black text-base">{m.product.price}</span>
                   </div>
+<div className="flex gap-2 pt-2 border-t border-slate-800">
+  {/* 1. View Details Button (Ab Product ka link ya description show karega) */}
+  <button
+    type="button"
+    onClick={() => {
+      alert(
+        `📌 Product Details:\n\nTitle: ${m.product.title}\nPrice: ${m.product.price}\nDescription: ${m.product.desc}\nStatus: ${m.product.stock}`
+      );
+    }}
+    className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition cursor-pointer"
+  >
+    View Details
+  </button>
 
-                  <div className="flex gap-2 pt-1 border-t border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedProduct(m.product)}
-                      className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg text-xs transition cursor-pointer text-center"
-                    >
-                      View Details
-                    </button>
-                    <a
-                      href={m.product.checkoutUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs transition text-center shadow flex items-center justify-center gap-1"
-                    >
-                      Instant Buy 🛍️
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+  {/* 2. Instant Buy Button (Agar real ID na ho toh safe cart link) */}
+  <a
+    href={
+      m.product.checkoutUrl ||
+      getCheckoutUrl(m.product.variantId || m.product.id)
+    }
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex-1 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl text-center transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+  >
+    Instant Buy 🛍️
+  </a>
+</div>
+ </div>
+   )}
+  </div>
+  </div>
+   ))}
+  </div>
 
       {/* Input Bar */}
       <form onSubmit={handleSend} className="flex gap-2">

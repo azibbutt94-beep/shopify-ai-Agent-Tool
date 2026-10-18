@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 // 1. ALL CATEGORY PRESETS WITH DEDICATED GADGETS & ELECTRONICS
 const CATEGORY_PRESETS: Record<
   string,
@@ -51,6 +52,17 @@ const DEFAULT_COLORS = [
 ];
 
 export default function CreateProductPage() {
+  const router = useRouter();
+
+  // 🔒 Security: Sirf Admin open kar sake
+  useEffect(() => {
+    const isAdmin = localStorage.getItem("is_admin") === "true";
+    if (!isAdmin) {
+      router.push("/login"); 
+    }
+  }, [router]);
+
+  // .
   // AI Prompt State
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);

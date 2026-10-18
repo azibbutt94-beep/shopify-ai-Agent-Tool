@@ -1,232 +1,178 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function HomePage() {
-  const [userName, setUserName] = useState<string>("Guest");
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [currentTime, setCurrentTime] = useState<string>("");
-  const [clickCount, setClickCount] = useState<number>(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const authStatus = localStorage.getItem("isLoggedIn") === "true";
-    setIsLoggedIn(authStatus);
+    setIsMounted(true);
+    const checkAdmin = () => {
+      const admin = localStorage.getItem("is_admin") === "true";
+      setIsAdmin(admin);
+    };
 
-    if (authStatus) {
-      const storedUserData = localStorage.getItem("user");
-      if (storedUserData) {
-        try {
-          const parsed = JSON.parse(storedUserData);
-          setUserName(parsed.name || "Merchant");
-        } catch {
-          setUserName("Merchant");
-        }
-      }
-    }
-
-    const timer = setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString());
-    }, 1000);
-
-    return () => clearInterval(timer);
+    checkAdmin();
+    window.addEventListener("storage", checkAdmin);
+    return () => window.removeEventListener("storage", checkAdmin);
   }, []);
 
-  const highlights = [
+  // 1. Customer-Facing Feature (Har kisi ke liye open)
+  const customerModule = {
+    badge: "Live Chat Shopping",
+    title: "Autonomous Shopping Assistant",
+    desc: "Interactive customer shopping consultations with instant product discovery, AI recommendations, and 1-click checkout cart links.",
+    href: "/ai-chatbot",
+    btnText: "Start Shopping with AI ➔",
+  };
+
+  // 2. Admin-Only Merchant Tools (Sirf Store Owner / Admin ke liye)
+  const adminModules = [
     {
-      title: "Autonomous Shopping Assistant",
-      badge: "Live Chat",
-      desc: "Interactive customer shopping consultations with 1-click checkout cart links.",
-      href: "/chat",
-    },
-    {
-      title: "AI Copywriter & SEO Engine",
       badge: "Merchant Tool",
+      title: "AI Copywriter & SEO Engine",
       desc: "Automate titles, clean product descriptions, sizing, and inventory tags.",
       href: "/create-product",
     },
     {
-      title: "Competitor Market Benchmarking",
       badge: "n8n + VPS",
+      title: "Competitor Market Benchmarking",
       desc: "Automated web scraping workflows tracking competitor pricing and margin gaps.",
       href: "/competitors",
     },
     {
-      title: "Predictive Demand Forecaster",
       badge: "Forecasting",
+      title: "Predictive Demand Forecaster",
       desc: "Time-series extrapolation predicting inventory velocity and expected stockouts.",
       href: "/forecast",
     },
     {
-      title: "Autonomous AI Business Advisor",
       badge: "Advisor",
+      title: "Autonomous AI Business Advisor",
       desc: "Consolidating store data, reviews, and RFM tiers to deliver executive guidance.",
       href: "/advisor",
     },
     {
-      title: "RFM Customer Segmentation",
       badge: "Analytics",
+      title: "RFM Customer Segmentation",
       desc: "Classifying shoppers into VIP, Loyal, and At-Risk tiers for targeted retention.",
       href: "/customers",
     },
   ];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 relative overflow-hidden py-10 px-6">
-      {/* Ambient Glow */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 blur-[130px] rounded-full pointer-events-none" />
-      <div className="absolute top-40 right-1/4 w-80 h-80 bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" />
-
-      <div className="max-w-6xl mx-auto space-y-10 relative z-10">
-        
-        {/* ========================================================= */}
-        {/* CASE A: LOGGED IN (Full Dashboard & Management Workspace) */}
-        {/* ========================================================= */}
-        {isLoggedIn ? (
-          <>
-            <section className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-2xl">
-              <div className="space-y-4 max-w-xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 rounded-full text-xs font-semibold tracking-wider uppercase">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Active Workspace
-                </div>
-
-                <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight">
-                  Welcome, <span className="text-emerald-400">{userName}</span>!
-                </h1>
-
-                <p className="text-slate-400 text-sm md:text-base leading-relaxed">
-                  Your Shopify AI automation workspace is active. Manage products, run competitor benchmarking, and view predictive forecasts.
-                </p>
-
-                <div className="flex flex-wrap gap-3 pt-2">
-                  <Link
-                    href="/catalog"
-                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg cursor-pointer"
-                  >
-                    Browse Catalog →
-                  </Link>
-                  <Link
-                    href="/chat"
-                    className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 transition-all cursor-pointer"
-                  >
-                    Launch AI Chatbot
-                  </Link>
-                </div>
-              </div>
-
-              {/* State & Clock Widget for Professor */}
-              <div className="bg-slate-950/80 border border-slate-800 p-6 rounded-2xl min-w-[220px] text-center space-y-2">
-                <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                  System Clock
-                </span>
-                <p className="text-2xl font-mono font-extrabold text-emerald-400">
-                  {currentTime || "--:--:--"}
-                </p>
-                <div className="pt-2 border-t border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setClickCount((c) => c + 1)}
-                    className="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition cursor-pointer"
-                  >
-                    Test State: {clickCount} Clicks
-                  </button>
-                </div>
-              </div>
-            </section>
-
-            {/* Modules Grid */}
-            <section className="space-y-4">
-              <div className="flex justify-between items-end border-b border-slate-800 pb-3">
-                <div>
-                  <h2 className="text-lg font-bold text-white">Platform Modules & Autonomous Tools</h2>
-                  <p className="text-xs text-slate-400">All 4 Phases operational for your store</p>
-                </div>
-                <span className="text-xs text-emerald-400 font-mono font-semibold">
-                  ● Ready
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {highlights.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-slate-900/70 border border-slate-800 hover:border-slate-700 p-6 rounded-2xl space-y-3 transition flex flex-col justify-between"
-                  >
-                    <div className="space-y-2">
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-emerald-400 border border-slate-700 rounded">
-                        {item.badge}
-                      </span>
-                      <h3 className="text-base font-bold text-white">{item.title}</h3>
-                      <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
-                    </div>
-                    <Link
-                      href={item.href}
-                      className="text-xs text-blue-400 hover:text-blue-300 font-semibold pt-2 inline-flex items-center gap-1"
-                    >
-                      Explore Feature →
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </>
-        ) : (
-          /* ========================================================= */
-          /* CASE B: LOGGED OUT (Clean, Sleek Public Landing Page)      */
-          /* ========================================================= */
-          <section className="py-16 text-center space-y-6 max-w-3xl mx-auto">
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 uppercase tracking-wider">
-              Autonomous Commerce Platform
-            </span>
-            
-            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-tight">
-              Next-Gen AI Suite for <span className="text-emerald-400">Shopify Merchants</span>
-            </h1>
-
-            <p className="text-slate-400 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
-              Automate customer support with live conversational AI, optimize product SEO metadata, track competitor prices via n8n, and predict sales velocity.
+    <div className="min-h-screen bg-[#070b19] text-slate-100 p-6 md:p-12 font-sans">
+      <div className="max-w-6xl mx-auto space-y-10">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+                Platform Modules & Autonomous Tools
+              </h1>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              All 4 Phases operational for your store
             </p>
+          </div>
 
-            <div className="flex justify-center items-center gap-4 pt-4">
-              <Link
-                href="/login"
-                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-950 cursor-pointer"
-              >
-                Sign In to Workspace →
-              </Link>
-              <Link
-                href="/signup"
-                className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-slate-200 font-semibold rounded-xl text-xs border border-slate-800 transition cursor-pointer"
-              >
-                Create Account
-              </Link>
-            </div>
+          {!isAdmin && isMounted && (
+            <Link
+              href="/login"
+              className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl transition"
+            >
+              Merchant? Login as Admin ➔
+            </Link>
+          )}
+        </div>
 
-            {/* Quick Public Preview Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-12 text-left">
-              <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl space-y-2">
-                <span className="text-xl">🤖</span>
-                <h4 className="text-sm font-bold text-white">AI Shopper Agent</h4>
-                <p className="text-xs text-slate-400">Direct conversational consultations with 1-click checkout permalinks.</p>
-              </div>
-
-              <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl space-y-2">
-                <span className="text-xl">📈</span>
-                <h4 className="text-sm font-bold text-white">Demand Forecasting</h4>
-                <p className="text-xs text-slate-400">Time-series forecasting identifying inventory run-out dates.</p>
-              </div>
-
-              <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl space-y-2">
-                <span className="text-xl">⚡</span>
-                <h4 className="text-sm font-bold text-white">Competitor Tracking</h4>
-                <p className="text-xs text-slate-400">n8n scraping workers deployed on Hostinger VPS.</p>
+        {/* 1. VISITOR / CUSTOMER SECTION (Shopping Assistant Card) */}
+        <div className="space-y-4">
+          <div className="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-[#0c142b] border border-emerald-500/40 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+            <div className="max-w-2xl space-y-3">
+              <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+                {customerModule.badge}
+              </span>
+              <h2 className="text-2xl font-bold text-white">
+                {customerModule.title}
+              </h2>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                {customerModule.desc}
+              </p>
+              <div className="pt-2">
+                <Link
+                  href={customerModule.href}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-emerald-500/20 cursor-pointer"
+                >
+                  {customerModule.btnText}
+                </Link>
               </div>
             </div>
-          </section>
+          </div>
+        </div>
+
+        {/* 2. MERCHANT / ADMIN ONLY TOOLS */}
+        {isMounted && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Store Operations & Merchant Engine
+              </h2>
+              {!isAdmin && (
+                <span className="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
+                  🔒 Locked for Customers
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {adminModules.map((m, idx) => (
+                <div
+                  key={idx}
+                  className={`bg-[#0c142b]/80 border rounded-2xl p-6 space-y-4 transition flex flex-col justify-between ${
+                    isAdmin
+                      ? "border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900 shadow-xl"
+                      : "border-slate-800/60 opacity-60 bg-slate-950/40"
+                  }`}
+                >
+                  <div className="space-y-2">
+                    <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-800 text-blue-400 border border-slate-700">
+                      {m.badge}
+                    </span>
+                    <h3 className="text-base font-bold text-white">
+                      {m.title}
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      {m.desc}
+                    </p>
+                  </div>
+
+                  <div className="pt-2">
+                    {isAdmin ? (
+                      <Link
+                        href={m.href}
+                        className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition inline-flex items-center gap-1"
+                      >
+                        Explore Feature ➔
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/login"
+                        className="text-xs font-semibold text-slate-400 hover:text-amber-400 transition inline-flex items-center gap-1.5"
+                      >
+                        <span>🔒</span> Admin Access Required (Login)
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
-
       </div>
-    </main>
+    </div>
   );
 }
