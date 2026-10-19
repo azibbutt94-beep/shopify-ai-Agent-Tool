@@ -120,10 +120,10 @@ export default function Navbar() {
                 Login
               </Link>
               <Link
-                href="/login"
+                href="/register"
                 className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl transition shadow-sm"
               >
-                Sign Up
+                register
               </Link>
             </div>
           )}
